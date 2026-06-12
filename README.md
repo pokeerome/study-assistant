@@ -20,7 +20,7 @@ This is a simple RAG (Retrieval Augmented Generation) system built from scratch 
 ## Setup
 
 1. Clone the repository
-   git clone https://github.com/pokeerome/study-assistant
+   git clone https://github.com/pokeerome/study-assistant.git
    cd study-assistant
 
 2. Create a virtual environment
