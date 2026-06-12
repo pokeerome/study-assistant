@@ -80,4 +80,4 @@ while True:
             messages=messages,
         )
 
-        print(response.message.content)
+        print(f"Assistant: {response.message.content}")
