@@ -1,6 +1,6 @@
 # Personal Study Assistant
 
-A local AI assistant that answers questions from your own notes via a REST API. No API keys or internet required.
+A local AI assistant that answers questions from your own notes via a REST API. Includes question history tracking with SQLite. No API keys or internet required.
 
 ## How it works
 
@@ -8,12 +8,14 @@ A local AI assistant that answers questions from your own notes via a REST API. 
 2. The assistant splits it into chunks when the server starts
 3. When you send a question, it searches for the most relevant chunks
 4. It passes those chunks to a local AI model and returns a grounded answer
+5. Every question and answer is saved to a local SQLite database
 
 This is a simple RAG (Retrieval Augmented Generation) system built from scratch in pure Python.
 
 ## Features
 
 - **REST API** — send questions via HTTP and get JSON responses
+- **History tracking** — every question and answer saved to SQLite with timestamps
 - **Fully local** — runs on your machine using Ollama, no API keys needed
 - **Configurable** — chunk size, model, and file all controlled via `.env`
 - **Auto docs** — FastAPI generates interactive documentation at `/docs`
@@ -64,7 +66,11 @@ uvicorn main:app --reload
 
 Then open `http://127.0.0.1:8000/docs` in your browser to use the interactive API documentation.
 
-Or send a request directly:
+---
+
+### POST /ask
+
+Send a question and get an answer based on your notes.
 
 ```
 POST http://127.0.0.1:8000/ask
@@ -84,13 +90,39 @@ Response:
 }
 ```
 
+---
+
+### GET /history
+
+Returns all previous questions and answers with timestamps.
+
+```
+GET http://127.0.0.1:8000/history
+```
+
+Response:
+
+```json
+[
+  {
+    "id": 1,
+    "question": "what is RAG?",
+    "answer": "RAG stands for Retrieval Augmented Generation...",
+    "chunks_found": 1,
+    "timestamp": "2026-06-18T12:49:09.044496"
+  }
+]
+```
+
+---
+
 ## Project structure
 
 ```
 study-assistant/
-├── main.py           # FastAPI app
+├── main.py           # FastAPI app — endpoints and request handling
+├── database.py       # SQLite database logic — init, save, fetch history
 ├── notes.txt         # Sample notes file
-├── .env              # Configuration (not committed)
 ├── .gitignore
 └── README.md
 ```
@@ -104,3 +136,6 @@ study-assistant/
 - Managing configuration with `.env` files
 - Building a REST API with FastAPI and Pydantic
 - Structuring request and response models with validation
+- SQLite database integration with Python
+- Separation of concerns — keeping database logic separate from API logic
+- Persistent history tracking across sessions
