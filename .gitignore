@@ -89,6 +89,7 @@ target/
 # Virtual environment
 .venv/
 
+history.db
 chunks.txt
 found_chunks.txt
 notes.txt

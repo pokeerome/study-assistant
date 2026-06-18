@@ -3,6 +3,7 @@ import ollama
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
+from database import init_db, save_history, get_history as fetch_history
 
 load_dotenv()
 
@@ -19,6 +20,13 @@ class Question(BaseModel):
 class Answer(BaseModel):
     answer: str
     relevant_chunks_found: int
+
+class History(BaseModel):
+    id: int
+    question: str
+    answer: str
+    chunks_found: int
+    timestamp: str
 
 chunks = []
 
@@ -37,6 +45,8 @@ try:
 except FileNotFoundError:
     print(f"File not found: {FILE_NAME}")
     exit()
+
+init_db()
 
 @app.post("/ask", response_model=Answer)
 def ask_question(user_question: Question):
@@ -62,7 +72,14 @@ def ask_question(user_question: Question):
         return Answer(answer = "No relevant information found for that question.", relevant_chunks_found = 0)
 
     context = "\n\n".join(found_chunks)
-    system_prompt = f"You are a helpful assistant. Answer questions using only the context below. If the answer is not in the context, say you don't know.\n\nContext:\n{context}"
+    system_prompt = f"""You are a helpful assistant that answers ONLY using the exact information in the context below.
+    Do NOT add any information that is not explicitly written in the context.
+    Do NOT expand on topics using outside knowledge.
+    If the context only has limited information, give only that limited information and nothing more.
+    If the answer cannot be found at all in the context, respond with: "I don't know based on the provided notes."
+    If you are unsure whether information comes from the context or your training, do NOT include it.
+    \n\nContext:\n{context}
+    """
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -74,4 +91,14 @@ def ask_question(user_question: Question):
         messages=messages,
     )
 
+    save_history(user_question.question, response.message.content, len(found_chunks))
+
     return Answer(answer = response.message.content, relevant_chunks_found = len(found_chunks))
+
+@app.get("/history", response_model=list[History])
+def get_history():
+    rows = fetch_history()
+    history_list = []
+    for row in rows:
+        history_list.append(History(id=row[0], question=row[1], answer=row[2], chunks_found=row[3], timestamp=row[4]))
+    return history_list
